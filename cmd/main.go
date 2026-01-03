@@ -2,55 +2,35 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/taylorono/go-webservice/internal/server"
 	"io"
-	"log"
-	"net"
-	"net/http"
 	"os"
 	"os/signal"
-	"sync"
-	"time"
+
+	"github.com/taylorono/go-webservice/internal/framework/config"
+	"github.com/taylorono/go-webservice/internal/framework/web"
+	"github.com/taylorono/go-webservice/internal/service"
 )
 
 func run(ctx context.Context, w io.Writer, args []string) error {
+	// listen for SIGINT and SIGTERM
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	// Configure Server
-	httpServer := &http.Server{
-		Addr:    net.JoinHostPort("0.0.0.0", "42069"),
-		Handler: server.NewServer(),
-	}
+	// Load Configuration
+	config.InitConfig(ctx)
 
-	// Server loop
-	go func() {
-		log.Printf("listening on %s\n", httpServer.Addr)
-		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
-			ctx.Done()
-		}
-	}()
+	// Create a new web server
+	webServer := web.NewServer(
+		web.WithPort(config.Registry.GetString("PORT")),
+	)
 
-	// Allow for graceful shutdown
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		<-ctx.Done()
-		// Wait for 10 seconds before forcing a shutdown.
-		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
-		}
+	// Create a new service and register routes
+	greeter := service.NewService()
+	greeter.AddRoutes(webServer)
 
-		cancel()
-		wg.Done()
-	}()
-
-	wg.Wait()
-	return nil
+	// Start the web server
+	return webServer.Start(ctx)
 }
 
 func main() {
