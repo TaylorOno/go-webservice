@@ -11,17 +11,21 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/taylorono/go-webservice/internal/framework/profile"
 )
 
 func init() {
 	flag.String("port", "8080", "port to listen on")
+	flag.String("debug-port", "", "when set pprof will be enabled on this port")
 }
 
 type Middleware func(next http.HandlerFunc) http.HandlerFunc
 
-// Server represents a web server.
+// Server represents a web server suitable for kubernetes deployments.
 type Server struct {
 	port       string
+	debugPort  string
 	mux        *http.ServeMux
 	middleware []Middleware
 }
@@ -43,7 +47,8 @@ func NewServer(opts ...OptionFunc) *Server {
 	return s
 }
 
-func (s *Server) AddRoute(pattern string, handler http.HandlerFunc) {
+// HandleFunc registers a new route with the given pattern and handler function applying any global middleware.
+func (s *Server) HandleFunc(pattern string, handler http.HandlerFunc) {
 	// apply any configured middleware
 	for _, m := range s.middleware {
 		handler = m(handler)
@@ -52,7 +57,7 @@ func (s *Server) AddRoute(pattern string, handler http.HandlerFunc) {
 	s.mux.HandleFunc(pattern, handler)
 }
 
-// Start starts the web server with the given context and will block until the the context has been cancelled. A context cancellation will cause a graceful shutdown.
+// Start starts the web server with the given context and will block until the context has been canceled. A context cancellation will cause a graceful shutdown.
 func (s *Server) Start(ctx context.Context) error {
 	var err error
 
@@ -71,10 +76,15 @@ func (s *Server) Start(ctx context.Context) error {
 		}
 	}()
 
+	// Launch pprof if the port has been specified
+	if s.debugPort == "" {
+		profile.ListenAndServe(ctx, s.debugPort)
+	}
+
 	// Allow for a graceful shutdown
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		<-ctx.Done()
 		// Wait for 10 seconds before forcing a shutdown.
 		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -83,8 +93,7 @@ func (s *Server) Start(ctx context.Context) error {
 		}
 
 		cancel()
-		wg.Done()
-	}()
+	})
 
 	wg.Wait()
 	return err

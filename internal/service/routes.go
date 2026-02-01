@@ -2,13 +2,13 @@ package service
 
 import "net/http"
 
-type httpServer interface {
-	AddRoute(pattern string, handler http.HandlerFunc)
+type Mux interface {
+	HandleFunc(pattern string, handler http.HandlerFunc)
 }
 
-func (s *Service) AddRoutes(httpServer httpServer) {
-	httpServer.AddRoute("GET /helloworld", helloWorld)
-	httpServer.AddRoute("/", http.NotFound)
+func (s *Service) AddRoutes(mux Mux) {
+	mux.HandleFunc("GET /helloworld", helloWorld)
+	mux.HandleFunc("/", http.NotFound)
 }
 
 func helloWorld(writer http.ResponseWriter, request *http.Request) {

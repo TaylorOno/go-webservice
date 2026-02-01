@@ -7,3 +7,9 @@ func WithPort(port string) OptionFunc {
 		o.port = port
 	}
 }
+
+func WithDebugPort(port string) OptionFunc {
+	return func(o *Server) {
+		o.debugPort = port
+	}
+}
