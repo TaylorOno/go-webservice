@@ -23,6 +23,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// Create a new web server
 	webServer := web.NewServer(
 		web.WithPort(config.Registry.GetString("PORT")),
+		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
 	)
 
 	// Create a new service and register routes
