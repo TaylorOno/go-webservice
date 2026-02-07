@@ -1,9 +1,11 @@
 package metrics
 
 import (
+	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type PrometheusReporter struct {
@@ -142,4 +144,21 @@ func (r *PrometheusReporter) ObserveHistogram(name string, value float64, labels
 		// Error
 	}
 	r.RUnlock()
+}
+
+func (r *PrometheusReporter) Routes(mux *http.ServeMux) {
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/metrics/docs", MetricDocs(r))
+}
+
+// GetMetricsDefinition returns the definition of all the metrics that have been registered using this package
+func (r *PrometheusReporter) GetMetricsDefinition() map[string]MetricDefinition {
+	// Creating a copy to avoid exposing the internal map to external manipulation
+	metrics := make(map[string]MetricDefinition)
+	r.RLock()
+	for k, v := range r.metricRegistry {
+		metrics[k] = v
+	}
+	r.RUnlock()
+	return metrics
 }
