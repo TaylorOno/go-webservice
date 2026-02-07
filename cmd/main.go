@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/taylorono/go-webservice/internal/api"
 	"github.com/taylorono/go-webservice/internal/framework/config"
 	"github.com/taylorono/go-webservice/internal/framework/web"
 	"github.com/taylorono/go-webservice/internal/service"
@@ -42,18 +43,19 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// Load Configuration
 	config.InitConfig(ctx)
 
+	// Create business logic services
+	greeter := service.NewService()
+
 	// Create a new web server
 	webServer := web.NewServer(
 		web.WithPort(config.Registry.GetString("PORT")),
 		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
+		web.WithRoutes(api.NewServiceHandlers(greeter).Routes),
 	)
 
-	// Create a new service and register routes
-	greeter := service.NewService()
-	greeter.AddRoutes(webServer)
+	eg := &errgroup.Group{}
 
 	// Launch the web server in a goroutine
-	eg := &errgroup.Group{}
 	eg.Go(func() error { return webServer.Start(ctx) })
 
 	// Start the web server
