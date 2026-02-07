@@ -3,7 +3,7 @@ package testcontainer
 import (
 	"context"
 	"log/slog"
-	"os"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
@@ -15,19 +15,7 @@ import (
 func StartKafkaContainer(ctx context.Context) *kafka.KafkaContainer {
 	slog.Info("Starting Kafka container...")
 
-	// Podman on Windows support
-	if os.Getenv("DOCKER_HOST") == "" {
-		// Default to the standard Podman named pipe on Windows if DOCKER_HOST is not set
-		os.Setenv("DOCKER_HOST", "npipe:////./pipe/podman-machine-default")
-	}
-
-	// Disable Ryuk (reaper) as it often has issues with Podman on Windows
-	if os.Getenv("TESTCONTAINERS_RYUK_DISABLED") == "" {
-		os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-	}
-
-	kafkaContainer, err := kafka.Run(ctx,
-		"confluentinc/cp-kafka:7.4.0",
+	kafkaContainer, err := kafka.Run(ctx, "confluentinc/cp-kafka:7.4.0",
 		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			if hostConfig.NetworkMode == "bridge" {
 				hostConfig.NetworkMode = ""
@@ -57,14 +45,6 @@ func StartKafkaContainer(ctx context.Context) *kafka.KafkaContainer {
 		return nil
 	}
 
-	bootstrapServersStr := ""
-	if len(bootstrapServers) > 0 {
-		bootstrapServersStr = bootstrapServers[0]
-		for i := 1; i < len(bootstrapServers); i++ {
-			bootstrapServersStr += "," + bootstrapServers[i]
-		}
-	}
-
-	slog.Info("Kafka container started", slog.String("bootstrapServers", bootstrapServersStr))
+	slog.Info("Kafka container started", slog.String("bootstrapServers", strings.Join(bootstrapServers, ",")))
 	return kafkaContainer
 }
