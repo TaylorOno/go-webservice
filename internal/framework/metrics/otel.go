@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
 	"go.opentelemetry.io/otel"
@@ -159,6 +160,22 @@ func (r *OTELReporter) ObserveHistogram(name string, value float64, labels ...st
 		}
 	}
 	r.RUnlock()
+}
+
+func (r *OTELReporter) Routes(mux *http.ServeMux) {
+	mux.HandleFunc("/metrics/docs", MetricDocs(r))
+}
+
+// GetMetricsDefinition returns the definition of all the metrics that have been registered using this package
+func (r *OTELReporter) GetMetricsDefinition() map[string]MetricDefinition {
+	// Creating a copy to avoid exposing the internal map to external manipulation
+	metrics := make(map[string]MetricDefinition)
+	r.RLock()
+	for k, v := range r.metricRegistry {
+		metrics[k] = v
+	}
+	r.RUnlock()
+	return metrics
 }
 
 func toAttributeSet(labelName []string, labelValue []string) attribute.Set {
