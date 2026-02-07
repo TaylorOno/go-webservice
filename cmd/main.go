@@ -6,16 +6,38 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/taylorono/go-webservice/internal/framework/config"
 	"github.com/taylorono/go-webservice/internal/framework/web"
 	"github.com/taylorono/go-webservice/internal/service"
+	"golang.org/x/sync/errgroup"
+)
+
+var (
+	setup   []func(ctx context.Context)
+	cleanup []func(ctx context.Context)
 )
 
 func run(ctx context.Context, w io.Writer, args []string) error {
 	// listen for SIGINT and SIGTERM
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill, syscall.SIGTERM)
 	defer cancel()
+
+	// apply any setup functions
+	for _, setupFunc := range setup {
+		setupFunc(ctx)
+	}
+
+	// defer any cleanup functions
+	defer func() {
+		for _, cleanupFunc := range cleanup {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			cleanupFunc(shutdownCtx)
+		}
+	}()
 
 	// Load Configuration
 	config.InitConfig(ctx)
@@ -30,8 +52,12 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	greeter := service.NewService()
 	greeter.AddRoutes(webServer)
 
+	// Launch the web server in a goroutine
+	eg := &errgroup.Group{}
+	eg.Go(func() error { return webServer.Start(ctx) })
+
 	// Start the web server
-	return webServer.Start(ctx)
+	return eg.Wait()
 }
 
 func main() {
