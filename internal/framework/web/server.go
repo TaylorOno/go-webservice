@@ -83,16 +83,14 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Allow for a graceful shutdown
 	var wg sync.WaitGroup
-	wg.Add(1)
 	wg.Go(func() {
 		<-ctx.Done()
 		// Wait for 10 seconds before forcing a shutdown.
 		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
 		if err = httpServer.Shutdown(shutdownCtx); err != nil {
 			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
 		}
-
-		cancel()
 	})
 
 	wg.Wait()
