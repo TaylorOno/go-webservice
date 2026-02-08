@@ -10,19 +10,14 @@ import (
 const metricTpl = `# Service metrics
 | Metric | Description | Type | Labels |
 |--------|-------------|------|--------|
-{{range .Definitions}}
+{{- range .Definitions }}
 | {{.Name}} | {{.Definition.Description}} | {{.Definition.Kind}} | {{.Definition.Labels | splitter }} |
-{{end}}
+{{- end }}
 `
 
 var (
 	splitter = func(s []string) string { return strings.Join(s, ", ") }
 )
-
-// Reporter contract for metrics provider
-type Reporter interface {
-	GetMetricsDefinition() map[string]MetricDefinition
-}
 
 type metricDefinition struct {
 	Name       string

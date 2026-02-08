@@ -1,6 +1,8 @@
 package web
 
-import "net/http"
+import (
+	"github.com/taylorono/go-webservice/internal/framework/metrics"
+)
 
 type OptionFunc func(*Server)
 
@@ -16,8 +18,12 @@ func WithDebugPort(port string) OptionFunc {
 	}
 }
 
-func WithRoutes(addRoutes func(mux *http.ServeMux)) OptionFunc {
+func WithMetricRegistry(registry metrics.Reporter) OptionFunc {
 	return func(o *Server) {
-		addRoutes(o.mux)
+		// Register metrics routes before middleware to avoid instrumentation.
+		registry.Routes(o.mux)
+
+		// Add default instrumentation middleware
+		o.middleware = append(o.middleware, metrics.HttpMiddleware(registry))
 	}
 }
