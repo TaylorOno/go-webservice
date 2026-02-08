@@ -54,9 +54,11 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	webServer := web.NewServer(
 		web.WithPort(config.Registry.GetString("PORT")),
 		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
-		web.WithRoutes(api.NewServiceHandlers(greeter).Routes),
-		web.WithRoutes(prometheusReporter.Routes),
+		web.WithMetricRegistry(prometheusReporter),
 	)
+
+	// Register route handlers
+	api.NewServiceHandlers(greeter).Routes(webServer)
 
 	eg := &errgroup.Group{}
 
