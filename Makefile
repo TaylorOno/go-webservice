@@ -66,6 +66,11 @@ build:
 run: build
 	/tmp/bin/${BINARY_NAME}
 
+## run/local: run the application and any local dependencies as test containers
+.PHONY: run/local
+run/local:
+	go run -tags local ./cmd
+
 ## run/live: run the application with reloading on file changes
 .PHONY: run/live
 run/live:
