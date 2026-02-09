@@ -3,6 +3,7 @@ package metrics
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,21 +19,19 @@ type Registry interface {
 	ObserveSummary(name string, value float64, labels ...string)
 }
 
-type Middleware func(next http.HandlerFunc) http.HandlerFunc
-
 // HttpMiddleware creates http middleware that captures basic response and timing information for http endpoints.
-func HttpMiddleware(registry Registry) Middleware {
-	registry.RegisterHistogram(_incomingReqHist, "Service response time", defaultBuckets, "path", "method", "status_code")
+func HttpMiddleware(registry Registry) func(next http.HandlerFunc) http.HandlerFunc {
+	registry.RegisterHistogram(_incomingReqHist, "Service response time", defaultBuckets, "path", "method")
 	registry.RegisterSummary(_incomingReqSummary, "Service response time with more labels", map[float64]float64{}, "path", "method", "status_code")
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			recorder := newResponseRecorder(w)
 
-			path := r.URL.Path
+			path := strings.Split(r.Pattern, " ")
 			defer func(start time.Time) {
-				registry.ObserveHistogram(_incomingReqHist, ToMilliseconds(time.Since(start)), r.Method, path, strconv.Itoa(recorder.statusCode))
-				registry.ObserveSummary(_incomingReqSummary, ToMilliseconds(time.Since(start)), r.Method, path, strconv.Itoa(recorder.statusCode))
+				registry.ObserveHistogram(_incomingReqHist, ToMilliseconds(time.Since(start)), r.Method, path[len(path)-1])
+				registry.ObserveSummary(_incomingReqSummary, ToMilliseconds(time.Since(start)), r.Method, path[len(path)-1], strconv.Itoa(recorder.statusCode))
 			}(time.Now())
 
 			next.ServeHTTP(recorder, r)

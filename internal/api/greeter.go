@@ -22,9 +22,9 @@ func (s *ServiceHandlers) Routes(mux Mux) {
 	mux.HandleFunc("GET /helloworld", s.helloWorld)
 }
 
-func (s *ServiceHandlers) helloWorld(writer http.ResponseWriter, request *http.Request) {
+func (s *ServiceHandlers) helloWorld(w http.ResponseWriter, r *http.Request) {
 	greeting := s.Service.SayHello()
 
-	writer.WriteHeader(http.StatusOK)
-	writer.Write([]byte(greeting))
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(greeting))
 }
