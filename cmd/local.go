@@ -10,15 +10,14 @@ import (
 	"github.com/taylorono/go-webservice/internal/framework/testcontainer"
 )
 
+// init sets default environment variables for Podman compatibility on Windows and disables Ryuk for stability.
 func init() {
-	// Podman on Windows support
-	if os.Getenv("DOCKER_HOST") == "" {
+	if os.Getenv("GOOS") == "windows" {
+		// Podman on Windows support
 		// Default to the standard Podman named pipe on Windows if DOCKER_HOST is not set
 		os.Setenv("DOCKER_HOST", "npipe:////./pipe/podman-machine-default")
-	}
 
-	// Disable Ryuk (reaper) as it often has issues with Podman on Windows
-	if os.Getenv("TESTCONTAINERS_RYUK_DISABLED") == "" {
+		// Disable Ryuk (reaper) as it often has issues with Podman on Windows
 		os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 	}
 }

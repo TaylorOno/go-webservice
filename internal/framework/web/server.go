@@ -22,18 +22,10 @@ func init() {
 
 type Middleware func(next http.HandlerFunc) http.HandlerFunc
 
-type MetricsReporter interface {
-	RegisterHistogram(name string, help string, buckets []float64, labels ...string)
-	RegisterSummary(name string, help string, quantiles map[float64]float64, labels ...string)
-	HistogramObserve(name string, value float64, labels ...string)
-	SummaryObserve(name string, value float64, labels ...string)
-}
-
 // Server represents a web server suitable for kubernetes deployments.
 type Server struct {
 	port       string
 	debugPort  string
-	reporter   MetricsReporter
 	mux        *http.ServeMux
 	middleware []Middleware
 }
