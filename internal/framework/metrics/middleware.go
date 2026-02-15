@@ -21,8 +21,8 @@ type Registry interface {
 
 // HttpMiddleware creates http middleware that captures basic response and timing information for http endpoints.
 func HttpMiddleware(registry Registry) func(next http.HandlerFunc) http.HandlerFunc {
-	registry.RegisterHistogram(_incomingReqHist, "Service response time", defaultBuckets, "path", "method")
-	registry.RegisterSummary(_incomingReqSummary, "Service response time with more labels", map[float64]float64{}, "path", "method", "status_code")
+	registry.RegisterHistogram(_incomingReqHist, "Service response time", defaultBuckets, "method", "path")
+	registry.RegisterSummary(_incomingReqSummary, "Service response time with more labels", map[float64]float64{}, "method", "path", "status_code")
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {

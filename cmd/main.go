@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/taylorono/go-webservice/internal/api"
 	"github.com/taylorono/go-webservice/internal/framework/config"
+	"github.com/taylorono/go-webservice/internal/framework/logging"
 	"github.com/taylorono/go-webservice/internal/framework/metrics"
 	"github.com/taylorono/go-webservice/internal/framework/web"
 	"github.com/taylorono/go-webservice/internal/service"
@@ -26,6 +28,9 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// listen for SIGINT and SIGTERM
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	// Load Configuration
+	config.InitConfig(ctx)
 
 	// apply any setup functions
 	for _, setupFunc := range setup {
@@ -44,8 +49,11 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// Create Metric Reporter
 	prometheusReporter := metrics.NewPrometheusReporter()
 
-	// Load Configuration
-	config.InitConfig(ctx)
+	// Register debug logging middleware
+	var middleware []web.Middleware
+	if logging.Level() <= slog.LevelDebug {
+		middleware = append(middleware, logging.HttpLoggingMiddleware)
+	}
 
 	// Create business logic services
 	greeter := service.NewService()
@@ -54,6 +62,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	webServer := web.NewServer(
 		web.WithPort(config.Registry.GetString("PORT")),
 		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
+		web.WithMiddleware(logging.HttpLoggingMiddleware),
 		web.WithMetricRegistry(prometheusReporter),
 	)
 

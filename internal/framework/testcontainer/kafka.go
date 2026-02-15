@@ -2,6 +2,7 @@ package testcontainer
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"strings"
 
@@ -37,12 +38,12 @@ func StartKafkaContainer(ctx context.Context) *kafka.KafkaContainer {
 		}),
 	)
 	if err != nil {
-		return nil
+		log.Fatal(err)
 	}
 
 	bootstrapServers, err := kafkaContainer.Brokers(ctx)
 	if err != nil {
-		return nil
+		log.Fatal(err)
 	}
 
 	slog.Info("Kafka container started", slog.String("bootstrapServers", strings.Join(bootstrapServers, ",")))

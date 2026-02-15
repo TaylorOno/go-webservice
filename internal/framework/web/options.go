@@ -18,6 +18,12 @@ func WithDebugPort(port string) OptionFunc {
 	}
 }
 
+func WithMiddleware(middleware ...Middleware) OptionFunc {
+	return func(o *Server) {
+		o.middleware = append(o.middleware, middleware...)
+	}
+}
+
 func WithMetricRegistry(registry metrics.Reporter) OptionFunc {
 	return func(o *Server) {
 		// Register metrics routes before middleware to avoid instrumentation.
