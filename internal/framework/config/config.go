@@ -34,6 +34,10 @@ func InitConfig(_ context.Context) {
 		slog.Error("failed to bind flags", slog.String("error", err.Error()))
 	}
 
+	pflag.VisitAll(func(f *pflag.Flag) {
+		registry.RegisterAlias(strings.ReplaceAll(f.Name, "-", "_"), f.Name)
+	})
+
 	// configure environment variables
 	registry.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	registry.AutomaticEnv()

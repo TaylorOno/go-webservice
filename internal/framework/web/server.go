@@ -70,7 +70,7 @@ func (s *Server) Start(ctx context.Context) error {
 	// Server loop
 	go func() {
 		log.Printf("listening on %s\n", httpServer.Addr)
-		if err = httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
 			ctx.Done()
 		}
