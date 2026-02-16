@@ -10,19 +10,19 @@ type Mux interface {
 	HandleFunc(pattern string, handler http.HandlerFunc)
 }
 
-type ServiceHandlers struct {
+type GreeterHandler struct {
 	Service *service.Service
 }
 
-func NewServiceHandlers(service *service.Service) *ServiceHandlers {
-	return &ServiceHandlers{Service: service}
+func NewGreeterHandler(service *service.Service) *GreeterHandler {
+	return &GreeterHandler{Service: service}
 }
 
-func (s *ServiceHandlers) Routes(mux Mux) {
+func (s *GreeterHandler) Routes(mux Mux) {
 	mux.HandleFunc("GET /helloworld", s.helloWorld)
 }
 
-func (s *ServiceHandlers) helloWorld(w http.ResponseWriter, r *http.Request) {
+func (s *GreeterHandler) helloWorld(w http.ResponseWriter, r *http.Request) {
 	greeting := s.Service.SayHello()
 
 	w.WriteHeader(http.StatusOK)

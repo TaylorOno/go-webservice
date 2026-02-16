@@ -16,7 +16,7 @@ import (
 func StartKafkaContainer(ctx context.Context) *kafka.KafkaContainer {
 	slog.Info("Starting Kafka container...")
 
-	kafkaContainer, err := kafka.Run(ctx, "confluentinc/cp-kafka:7.4.0",
+	kafkaContainer, err := kafka.Run(ctx, "confluentinc/cp-kafka:7.7.7",
 		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			if hostConfig.NetworkMode == "bridge" {
 				hostConfig.NetworkMode = ""
