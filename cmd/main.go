@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/taylorono/go-webservice/internal/framework/metrics"
 	"github.com/taylorono/go-webservice/internal/framework/web"
 	"github.com/taylorono/go-webservice/internal/service"
-	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -33,18 +33,10 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	config.InitConfig(ctx)
 
 	// apply any setup functions
-	for _, setupFunc := range setup {
-		setupFunc(ctx)
-	}
+	startup(ctx)
 
 	// defer any cleanup functions
-	defer func() {
-		for _, cleanupFunc := range cleanup {
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			defer cancel()
-			cleanupFunc(shutdownCtx)
-		}
-	}()
+	defer shutdown()
 
 	// Create Metric Reporter
 	prometheusReporter := metrics.NewPrometheusReporter()
@@ -67,15 +59,38 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	)
 
 	// Register route handlers
-	api.NewServiceHandlers(greeter).Routes(webServer)
+	api.NewGreeterHandler(greeter).Routes(webServer)
 
-	eg := &errgroup.Group{}
+	wg := sync.WaitGroup{}
 
 	// Launch the web server in a goroutine
-	eg.Go(func() error { return webServer.Start(ctx) })
+	wg.Go(func() {
+		if err := webServer.Start(ctx); err != nil {
+			slog.Info("web server stopped", "error", err)
+		}
+	})
 
 	// Start the web server
-	return eg.Wait()
+	wg.Wait()
+	return nil
+}
+
+func startup(ctx context.Context) {
+	wg := sync.WaitGroup{}
+	for _, setupFunc := range setup {
+		wg.Go(func() { setupFunc(ctx) })
+	}
+	wg.Wait()
+}
+
+func shutdown() {
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer shutdownCancel()
+	wg := sync.WaitGroup{}
+	for _, cleanupFunc := range cleanup {
+		wg.Go(func() { cleanupFunc(shutdownCtx) })
+	}
+	wg.Wait()
 }
 
 func main() {

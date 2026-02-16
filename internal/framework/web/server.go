@@ -5,7 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -69,7 +69,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Server loop
 	go func() {
-		log.Printf("listening on %s\n", httpServer.Addr)
+		slog.Info(fmt.Sprintf("listening on %s\n", httpServer.Addr))
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
 			ctx.Done()
@@ -77,7 +77,7 @@ func (s *Server) Start(ctx context.Context) error {
 	}()
 
 	// Launch pprof if the port has been specified
-	if s.debugPort == "" {
+	if s.debugPort != "" {
 		profile.ListenAndServe(ctx, s.debugPort)
 	}
 

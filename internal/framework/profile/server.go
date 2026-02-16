@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/pprof"
-	"os"
 )
 
 func ListenAndServe(ctx context.Context, port string) {
@@ -27,8 +27,9 @@ func ListenAndServe(ctx context.Context, port string) {
 	}
 
 	go func() {
+		slog.Info(fmt.Sprintf("debug on port %s", profileServer.Addr))
 		if err := profileServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+			slog.Error("error serving debug", slog.String("", err.Error()))
 			ctx.Done()
 		}
 	}()
