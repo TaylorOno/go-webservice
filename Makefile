@@ -56,6 +56,11 @@ test/cover:
 	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
 	go tool cover -html=/tmp/coverage.out
 
+## bdd: run bdd tests
+.PHONY: bdd
+bdd:
+	go test -v -race -buildvcs ./test/... -tags integration
+
 ## build: build the application
 .PHONY: build
 build:
@@ -64,7 +69,7 @@ build:
 ## run: run the  application
 .PHONY: run
 run: build
-	/tmp/bin/${BINARY_NAME}
+	/tmp/bin/${BINARY_NAME} --port 9090
 
 ## run/local: run the application and any local dependencies as test containers
 .PHONY: run/local

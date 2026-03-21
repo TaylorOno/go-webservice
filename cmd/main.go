@@ -24,13 +24,20 @@ var (
 	cleanup []func(ctx context.Context)
 )
 
-func run(ctx context.Context, w io.Writer, args []string) error {
-	// listen for SIGINT and SIGTERM
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	// Load Configuration
-	config.InitConfig(ctx)
+	if err := run(ctx, os.Stdout, os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
+	slog.Info("shutdown successful")
+}
+
+func run(ctx context.Context, w io.Writer, args []string) error {
+	setup = append(setup, config.InitConfig, logging.InitLogger)
 
 	// apply any setup functions
 	startup(ctx)
@@ -54,7 +61,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	webServer := web.NewServer(
 		web.WithPort(config.Registry.GetString("PORT")),
 		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
-		web.WithMiddleware(logging.HttpLoggingMiddleware),
+		web.WithMiddleware(middleware...),
 		web.WithMetricRegistry(prometheusReporter),
 	)
 
@@ -86,17 +93,10 @@ func startup(ctx context.Context) {
 func shutdown() {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer shutdownCancel()
+
 	wg := sync.WaitGroup{}
 	for _, cleanupFunc := range cleanup {
 		wg.Go(func() { cleanupFunc(shutdownCtx) })
 	}
 	wg.Wait()
-}
-
-func main() {
-	ctx := context.Background()
-	if err := run(ctx, os.Stdout, os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
-	}
 }
