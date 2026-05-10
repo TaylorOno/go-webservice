@@ -11,14 +11,17 @@ type Mux interface {
 	HandleFunc(pattern string, handler http.HandlerFunc)
 }
 
+// GreeterHandler wraps a service instance and provides HTTP handlers for greeting operations.
 type GreeterHandler struct {
 	Service *service.Service
 }
 
+// NewGreeterHandler returns a new GreeterHandler instance.
 func NewGreeterHandler(service *service.Service) *GreeterHandler {
 	return &GreeterHandler{Service: service}
 }
 
+// Routes registers HTTP handlers for greeting operations.
 func (s *GreeterHandler) Routes(mux Mux) {
 	mux.HandleFunc("GET /helloworld", s.helloWorld)
 	mux.HandleFunc("POST /helloworld", s.helloUser)

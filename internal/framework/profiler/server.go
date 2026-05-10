@@ -1,4 +1,4 @@
-package profile
+package profiler
 
 import (
 	"context"

@@ -53,8 +53,8 @@ test:
 ## test/cover: run all tests and display coverage
 .PHONY: test/cover
 test/cover:
-	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
-	go tool cover -html=/tmp/coverage.out
+	go test -v -race -buildvcs -coverprofile=./build/coverage.out ./...
+	go tool cover -html=./build/coverage.out
 
 ## bdd: run bdd tests
 .PHONY: bdd

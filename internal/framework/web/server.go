@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/taylorono/go-webservice/internal/framework/profile"
+	"github.com/taylorono/go-webservice/internal/framework/profiler"
 )
 
 var (
@@ -85,11 +85,13 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Launch pprof if the port has been specified
 	if s.debugPort != "" {
-		profile.ListenAndServe(ctx, s.debugPort)
+		profiler.ListenAndServe(ctx, s.debugPort)
 	}
 
-	// Allow for a graceful shutdown
+	// Allow for a graceful shutdown ctx.Done() will block until the application receives a SIGTERM or SIGINT
 	<-ctx.Done()
+
+	// Graceful shutdown operations
 	slog.Info("stopping webserver")
 
 	// Wait for 10 seconds before forcing a shutdown.
