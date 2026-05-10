@@ -22,7 +22,7 @@ type Configuration struct {
 	*viper.Viper
 }
 
-// InitConfig initializes the application configuration must be called AFTER any flags have been registered to preserver config precidence order.
+// InitConfig initializes the application configuration must be called AFTER any flags have been registered to preserver config precedence order.
 func InitConfig(_ context.Context) {
 	registry := viper.New()
 

@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"context"
 	"flag"
 	"log/slog"
 	"os"
@@ -14,13 +15,16 @@ var (
 )
 
 func init() {
-	flag.TextVar(&lvl, "log-level", slog.LevelInfo, "log level: debug info warn error")
+	flag.TextVar(&lvl, "log-level", slog.LevelInfo, "log level: [DEBUG INFO WARN ERROR]")
 	flag.BoolVar(&enableJSON, "log-json", false, "enable structured logging")
 	flag.BoolVar(&enableSource, "log-source", false, "enable logging of source file and line")
-
 }
 
-func init() {
+func Level() slog.Level {
+	return lvl
+}
+
+func InitLogger(ctx context.Context) {
 	if !testing.Testing() {
 		flag.Parse()
 		if !enableJSON {
@@ -31,8 +35,4 @@ func init() {
 		opts := &slog.HandlerOptions{Level: lvl, AddSource: enableSource}
 		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, opts)))
 	}
-}
-
-func Level() slog.Level {
-	return lvl
 }

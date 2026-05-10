@@ -9,15 +9,19 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
-	"github.com/taylorono/go-webservice/internal/framework/profile"
+	"github.com/taylorono/go-webservice/internal/framework/profiler"
+)
+
+var (
+	port      string
+	debugPort string
 )
 
 func init() {
-	flag.String("port", "8080", "port to listen on")
-	flag.String("debug-port", "", "when set pprof will be enabled on this port")
+	flag.StringVar(&port, "port", "8080", "port to listen on")
+	flag.StringVar(&debugPort, "debug-port", "", "when set pprof will be enabled on this port")
 }
 
 type Middleware func(next http.HandlerFunc) http.HandlerFunc
@@ -63,36 +67,39 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Configure Server
 	httpServer := &http.Server{
-		Addr:    net.JoinHostPort("", s.port),
 		Handler: s.mux,
+	}
+
+	listener, err := net.Listen("tcp", net.JoinHostPort("", s.port))
+	if err != nil {
+		return err
 	}
 
 	// Server loop
 	go func() {
-		slog.Info(fmt.Sprintf("listening on %s\n", httpServer.Addr))
-		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		slog.Info(fmt.Sprintf("listening on %s\n", listener.Addr()))
+		if err := httpServer.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
-			ctx.Done()
 		}
 	}()
 
 	// Launch pprof if the port has been specified
 	if s.debugPort != "" {
-		profile.ListenAndServe(ctx, s.debugPort)
+		profiler.ListenAndServe(ctx, s.debugPort)
 	}
 
-	// Allow for a graceful shutdown
-	var wg sync.WaitGroup
-	wg.Go(func() {
-		<-ctx.Done()
-		// Wait for 10 seconds before forcing a shutdown.
-		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		defer cancel()
-		if err = httpServer.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
-		}
-	})
+	// Allow for a graceful shutdown ctx.Done() will block until the application receives a SIGTERM or SIGINT
+	<-ctx.Done()
 
-	wg.Wait()
-	return err
+	// Graceful shutdown operations
+	slog.Info("stopping webserver")
+
+	// Wait for 10 seconds before forcing a shutdown.
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err = httpServer.Shutdown(shutdownCtx); err != nil {
+		return err
+	}
+
+	return nil
 }

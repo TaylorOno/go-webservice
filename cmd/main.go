@@ -20,17 +20,28 @@ import (
 )
 
 var (
-	setup   []func(ctx context.Context)
+	// init functions can register setup functions that will be run before the application starts
+	setup []func(ctx context.Context)
+
+	// init functions can register cleanup functions that will be run after the application stops
 	cleanup []func(ctx context.Context)
 )
 
-func run(ctx context.Context, w io.Writer, args []string) error {
-	// listen for SIGINT and SIGTERM
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+func main() {
+	// Create a context that will be canceled when the application is shutdown
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	// Load Configuration
-	config.InitConfig(ctx)
+	if err := run(ctx, os.Stdout, os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
+	slog.Info("shutdown successful")
+}
+
+func run(ctx context.Context, w io.Writer, args []string) error {
+	setup = append(setup, config.InitConfig, logging.InitLogger)
 
 	// apply any setup functions
 	startup(ctx)
@@ -41,29 +52,17 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// Create Metric Reporter
 	prometheusReporter := metrics.NewPrometheusReporter()
 
-	// Register debug logging middleware
-	var middleware []web.Middleware
-	if logging.Level() <= slog.LevelDebug {
-		middleware = append(middleware, logging.HttpLoggingMiddleware)
-	}
-
 	// Create business logic services
 	greeter := service.NewService()
 
-	// Create a new web server
-	webServer := web.NewServer(
-		web.WithPort(config.Registry.GetString("PORT")),
-		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
-		web.WithMiddleware(logging.HttpLoggingMiddleware),
-		web.WithMetricRegistry(prometheusReporter),
-	)
+	// Creates a web server for the transport layer
+	webServer := createWebServer(prometheusReporter)
 
 	// Register route handlers
 	api.NewGreeterHandler(greeter).Routes(webServer)
 
-	wg := sync.WaitGroup{}
-
 	// Launch the web server in a goroutine
+	wg := sync.WaitGroup{}
 	wg.Go(func() {
 		if err := webServer.Start(ctx); err != nil {
 			slog.Info("web server stopped", "error", err)
@@ -73,6 +72,29 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// Start the web server
 	wg.Wait()
 	return nil
+}
+
+func createWebServer(prometheusReporter *metrics.PrometheusReporter) *web.Server {
+	// Register debug logging middleware
+	var middleware []web.Middleware
+	if logging.Level() <= slog.LevelDebug {
+		middleware = append(middleware, logging.HttpLoggingMiddleware)
+	}
+
+	// Add Platform Headers middleware
+	// This will copy the platform headers from requests into the context
+	ph := web.NewPlatformHeaders(0, web.StartsWithHeaders([]string{"X-Platform"}))
+	middleware = append(middleware, ph.AddToContext)
+
+	// Create a new web server
+	webServer := web.NewServer(
+		web.WithPort(config.Registry.GetString("PORT")),
+		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
+		web.WithMiddleware(middleware...),
+		web.WithMetricRegistry(prometheusReporter),
+	)
+
+	return webServer
 }
 
 func startup(ctx context.Context) {
@@ -86,17 +108,10 @@ func startup(ctx context.Context) {
 func shutdown() {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer shutdownCancel()
+
 	wg := sync.WaitGroup{}
 	for _, cleanupFunc := range cleanup {
 		wg.Go(func() { cleanupFunc(shutdownCtx) })
 	}
 	wg.Wait()
-}
-
-func main() {
-	ctx := context.Background()
-	if err := run(ctx, os.Stdout, os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
-	}
 }
