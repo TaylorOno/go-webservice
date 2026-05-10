@@ -33,3 +33,17 @@ func WithMetricRegistry(registry metrics.Reporter) OptionFunc {
 		o.middleware = append(o.middleware, metrics.HttpMiddleware(registry))
 	}
 }
+
+// WithReadinessCheck adds a new check to the readiness probe.
+func WithReadinessCheck(name string, check Check) OptionFunc {
+	return func(s *Server) {
+		s.RegisterReadinessCheck(name, check)
+	}
+}
+
+// WithLivenessCheck adds a new check to the liveness probe. Use this sparingly, as liveness probes should generally just confirm the process is running.
+func WithLivenessCheck(name string, check Check) OptionFunc {
+	return func(s *Server) {
+		s.RegisterLivenessCheck(name, check)
+	}
+}

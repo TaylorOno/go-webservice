@@ -28,19 +28,23 @@ type Middleware func(next http.HandlerFunc) http.HandlerFunc
 
 // Server represents a web server suitable for kubernetes deployments.
 type Server struct {
-	port       string
-	debugPort  string
-	mux        *http.ServeMux
-	middleware []Middleware
+	port              string
+	debugPort         string
+	mux               *http.ServeMux
+	readinessRegistry *healthRegistry
+	livenessRegistry  *healthRegistry
+	middleware        []Middleware
 }
 
 // NewServer Creates a new web server with the given options.
 func NewServer(opts ...OptionFunc) *Server {
 	// default server
 	s := &Server{
-		port:       "8080",
-		mux:        http.NewServeMux(),
-		middleware: []Middleware{},
+		port:              "8080",
+		mux:               http.NewServeMux(),
+		readinessRegistry: newHealthRegistry(),
+		livenessRegistry:  newHealthRegistry(),
+		middleware:        []Middleware{},
 	}
 
 	// apply config overrides
@@ -74,6 +78,10 @@ func (s *Server) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// Register health endpoints
+	s.mux.HandleFunc("/healthz", s.livenessHandler())
+	s.mux.HandleFunc("/readyz", s.readinessHandler())
 
 	// Server loop
 	go func() {
