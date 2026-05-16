@@ -1,0 +1,34 @@
+{{define "home"}}
+    <!DOCTYPE html>
+
+    <html lang="en" xmlns:hx-on="http://www.w3.org/1999/xhtml" data-bs-theme="dark">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light dark"/>
+        <link href="/static/css/styles.css" rel="stylesheet">
+        <script src="/static/scripts/htmx.min.js"></script>
+        <title>Home</title>
+    </head>
+    <body class="flex h-screen flex-col overflow-hidden bg-gray-100 dark:bg-gray-900">
+
+    <!-- Title Bar -->
+    <header class="bg-gray-800 text-white shadow-md">
+        <div class="mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <h1 class="ml-2 text-2xl font-bold lg:text-4xl">HTMX - UI</h1>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900">
+        <!-- Main Content -->
+        <main id="content" class="flex h-full flex-1 flex-col p-6 md:ml-64 lg:ml-64">
+        </main>
+    </div>
+    </body>
+    </html>
+{{end}}

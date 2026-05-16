@@ -20,6 +20,7 @@ import (
 	"github.com/taylorono/go-webservice/internal/framework/web"
 	"github.com/taylorono/go-webservice/internal/joker"
 	"github.com/taylorono/go-webservice/internal/service"
+	"github.com/taylorono/go-webservice/ui"
 )
 
 var (
@@ -61,8 +62,11 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// Creates a web server for the transport layer
 	webServer := createWebServer(prometheusReporter)
 
-	// Register route handlers
+	// Register service route handlers
 	api.NewGreeterHandler(greeter).Routes(webServer)
+
+	// Register UI route handlers
+	ui.NewUIHandler().Routes(webServer)
 
 	// Launch the web server in a goroutine
 	wg := sync.WaitGroup{}
