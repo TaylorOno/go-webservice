@@ -39,7 +39,7 @@ func (t *throttle) AtMaxConcurrency() bool {
 }
 
 // Throttler middleware to control the maximum number of inflight requests this client is allowed to have
-func Throttler(clientName string, maxCalls int, reportingInterval time.Duration, report OnReport) ClientMiddleware {
+func Throttler(client *Client, maxCalls int, reportingInterval time.Duration, report OnReport) ClientMiddleware {
 	control := &throttle{
 		max: maxCalls,
 	}
@@ -50,14 +50,14 @@ func Throttler(clientName string, maxCalls int, reportingInterval time.Duration,
 			control.lock.Lock()
 			current := control.current
 			control.lock.Unlock()
-			report(clientName, current)
+			report(client.clientName, current)
 		}
 	}()
 
 	return func(c Doer) Doer {
 		return ClientFunc(func(r *http.Request) (*http.Response, error) {
 			if control.AtMaxConcurrency() {
-				defaultErrorHandler(clientName, r.Method, r.Header, ErrMaxCallsReached)
+				client.OnError(r.Method, r.Header, ErrMaxCallsReached)
 				return nil, ErrMaxCallsReached
 			}
 

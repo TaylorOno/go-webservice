@@ -1,42 +1,37 @@
-package web
+package headers
 
 import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/taylorono/go-webservice/internal/framework/rest"
 )
+
+// Middleware is rest.ClientMiddleware that automatically adds platform headers to the outgoing request context.
+func Middleware(c rest.Doer) rest.Doer {
+	return rest.ClientFunc(func(r *http.Request) (*http.Response, error) {
+		ctxHeaders, ok := r.Context().Value(httpHeaderKey{}).(http.Header)
+		if ok {
+			for key := range ctxHeaders {
+				r.Header.Set(key, ctxHeaders.Get(key))
+			}
+		}
+
+		return c.Do(r)
+	})
+}
 
 // PlatformHeaders is used to identify what headers are to be added to the request context
 // which is used by PassToContext middleware
 type PlatformHeaders struct {
-	ContextKey        interface{}
 	StartsWithHeaders []string
 	ExactHeaders      []string
 }
 
-type HeaderOption func(*PlatformHeaders)
-
-func StartsWithHeaders(headers []string) HeaderOption {
-	return func(h *PlatformHeaders) {
-		h.StartsWithHeaders = make([]string, len(headers))
-		for i, v := range headers {
-			h.StartsWithHeaders[i] = http.CanonicalHeaderKey(v)
-		}
-	}
-}
-
-func ExactHeaders(headers []string) HeaderOption {
-	return func(h *PlatformHeaders) {
-		h.ExactHeaders = make([]string, len(headers))
-		for i, v := range headers {
-			h.ExactHeaders[i] = http.CanonicalHeaderKey(v)
-		}
-	}
-}
-
 // NewPlatformHeaders creates a new PlatformHeaders middleware provider for a given context key.
-func NewPlatformHeaders(contextKey interface{}, opts ...HeaderOption) *PlatformHeaders {
-	ph := &PlatformHeaders{ContextKey: contextKey}
+func NewPlatformHeaders(opts ...HeaderOption) *PlatformHeaders {
+	ph := &PlatformHeaders{}
 	for _, opt := range opts {
 		opt(ph)
 	}
@@ -44,8 +39,8 @@ func NewPlatformHeaders(contextKey interface{}, opts ...HeaderOption) *PlatformH
 	return ph
 }
 
-// AddToContext is middleware to add the headers to the request context.
-func (h *PlatformHeaders) AddToContext(next http.HandlerFunc) http.HandlerFunc {
+// ContextHeaders is webserver middleware that adds header information from incoming requests to the context based on the configured settings.
+func (h *PlatformHeaders) ContextHeaders(next http.HandlerFunc) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r.WithContext(h.headersToContext(r)))
 	}
@@ -82,5 +77,5 @@ HeaderLoop:
 		}
 	}
 
-	return context.WithValue(ctx, h.ContextKey, httpHeaders)
+	return context.WithValue(ctx, httpHeaderKey{}, httpHeaders)
 }

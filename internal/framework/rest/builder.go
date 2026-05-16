@@ -13,7 +13,7 @@ import (
 const (
 	metricNameHistory     = "downstream_request_histogram"
 	metricNameSummary     = "downstream_request_summary"
-	metricClientError     = "client_error"
+	metricClientError     = "downstream_client_error"
 	metricConcurrentCalls = "http_current_concurrent_calls"
 
 	errTimeoutLabelValue            = "http_request_timeout"
@@ -99,37 +99,37 @@ func (b *ClientBuilder) Build() *Client {
 		labelKeys := generateLabelKeys("client_name", "method", "status_code", "host")
 		b.metricsReporter.RegisterHistogram(metricNameHistory, "Response time ms", defaultBuckets, "client_name", "method", "host")
 		b.metricsReporter.RegisterSummary(metricNameSummary, "Response time ms", map[float64]float64{}, labelKeys...)
-		b.metricsReporter.RegisterCounter(metricClientError, "DME client errors", labelKeys...)
+		b.metricsReporter.RegisterCounter(metricClientError, "Client errors", labelKeys...)
 
 		// Register stat collector
-		client.OnStats = func(clientName string, host string, method string, headers http.Header, statusCode int, executionTime time.Duration) {
-			labelVals := generateLabelVals(headers, clientName, method, fmt.Sprintf("%d", statusCode), host)
+		client.OnStats = func(host string, method string, headers http.Header, statusCode int, executionTime time.Duration) {
+			labelVals := generateLabelVals(headers, b.clientName, method, fmt.Sprintf("%d", statusCode), host)
 			if statusCode < 400 && statusCode >= 200 {
-				b.metricsReporter.ObserveHistogram(metricNameHistory, toMilliseconds(executionTime), clientName, method, host)
+				b.metricsReporter.ObserveHistogram(metricNameHistory, toMilliseconds(executionTime), b.clientName, method, host)
 			}
 			b.metricsReporter.ObserveSummary(metricNameSummary, toMilliseconds(executionTime), labelVals...)
 		}
 
 		// Register error collector
-		client.OnError = func(clientName string, method string, headers http.Header, err error) {
+		client.OnError = func(method string, headers http.Header, err error) {
 			errLabel := errUnhandledHTTPErrorLabelValue
 			if isTimeoutError(err) {
 				errLabel = errTimeoutLabelValue
 			}
 
-			labelVals := generateLabelVals(headers, clientName, errLabel)
+			labelVals := generateLabelVals(headers, b.clientName, errLabel)
 			b.metricsReporter.IncCounter(metricClientError, 1, labelVals...)
 		}
 
-		b.middlewares = append(b.middlewares, Metrics(b.clientName))
+		b.middlewares = append(b.middlewares, Metrics(client))
 	}
 
 	// Register throttling middleware with metrics reporting
 	if b.metricsReporter != nil {
 		b.metricsReporter.RegisterGauge(metricConcurrentCalls, "HTTP in-progress calls", "service")
-		b.middlewares = append(b.middlewares, Throttler(b.clientName, b.ThrottleLimit, 10*time.Second, MetricOnReport(b.metricsReporter)))
+		b.middlewares = append(b.middlewares, Throttler(client, b.ThrottleLimit, 10*time.Second, MetricOnReport(b.metricsReporter)))
 	} else {
-		b.middlewares = append(b.middlewares, Throttler(b.clientName, b.ThrottleLimit, 10*time.Second, NoOpReport))
+		b.middlewares = append(b.middlewares, Throttler(client, b.ThrottleLimit, 10*time.Second, NoOpReport))
 	}
 
 	// Wrap the base client with all the middleware

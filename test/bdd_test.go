@@ -38,6 +38,7 @@ func TestFeatures(t *testing.T) {
 
 func InitializeSuite(t *testing.T) func(*godog.TestSuiteContext) {
 	return func(suiteContext *godog.TestSuiteContext) {
+		// Build the application once per test suite
 		components.Build(t, suiteContext)
 	}
 }

@@ -92,18 +92,31 @@ func Build(t *testing.T, suiteCtx *godog.TestSuiteContext) {
 		slog.Info("cleanup build artifacts completed")
 	})
 
-	// Run the server binary before each scenario
 	scenarioCtx := suiteCtx.ScenarioContext()
-	scenarioCtx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+
+	scenarioCtx.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
+		server, ok := ctx.Value(sessionKey{}).(*service)
+		if !ok {
+			return ctx, nil
+		}
+
+		return ctx, server.Stop(t)
+	})
+
+	// Define the steps
+	scenarioCtx.Step(`^the server started(?: with profile (.*))?`, func(ctx context.Context, profile string) (context.Context, error) {
 		defer func(t time.Time) {
 			slog.Info("server started", slog.String("path", pathToServerBinary), slog.Duration("time", time.Since(t)))
 		}(time.Now())
 
+		// start the application on a random port
 		port, err := findAvailablePort()
 		if err != nil {
 			return ctx, fmt.Errorf("failed to get port: %w", err)
 		}
 
+		// start the application on available port with the provided profile
+		t.Setenv("PROFILE", profile)
 		t.Setenv("PORT", fmt.Sprintf("%d", port))
 		cmd := exec.CommandContext(ctx, pathToServerBinary)
 		slog.Info("starting server", "cmd", cmd.String())
@@ -124,13 +137,6 @@ func Build(t *testing.T, suiteCtx *godog.TestSuiteContext) {
 		return ctx, nil
 	})
 
-	scenarioCtx.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
-		server := ctx.Value(sessionKey{}).(*service)
-
-		return ctx, server.Stop(t)
-	})
-
-	// Define the steps
 	scenarioCtx.Step(`^the server is running$`, func(ctx context.Context) error {
 		port := GetServicePort(ctx)
 

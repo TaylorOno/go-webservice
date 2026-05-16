@@ -1,4 +1,7 @@
 Feature: eat godogs
+  Background:
+    Given the server started
+
   Scenario: returns a generic greeting
     Given the server is running
     When I send a GET request to the /helloworld endpoint

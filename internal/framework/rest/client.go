@@ -1,13 +1,15 @@
 package rest
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 )
 
 var (
-	defaultErrorHandler = func(clientName string, method string, headers http.Header, err error) {}
-	defaultStatsHandler = func(clientName string, host string, method string, headers http.Header, statusCode int, executionTime time.Duration) {
+	defaultErrorHandler = func(method string, headers http.Header, err error) {}
+	defaultStatsHandler = func(host string, method string, headers http.Header, statusCode int, executionTime time.Duration) {
 	}
 )
 
@@ -24,10 +26,10 @@ type MetricsReporter interface {
 }
 
 // StatsHandler is a function that can be called to observer client call related metrics.
-type StatsHandler func(clientName string, host string, method string, headers http.Header, statusCode int, executionTime time.Duration)
+type StatsHandler func(host string, method string, headers http.Header, statusCode int, executionTime time.Duration)
 
 // ErrorHandler is a function that can be called to observer client call related errors.
-type ErrorHandler func(clientName string, method string, headers http.Header, err error)
+type ErrorHandler func(method string, headers http.Header, err error)
 
 type ClientMiddleware func(Doer) Doer
 
@@ -53,4 +55,14 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 // Doer Generic http client interface
 type Doer interface {
 	Do(*http.Request) (*http.Response, error)
+}
+
+func Decode[T any](r *http.Response) (T, error) {
+	var v T
+	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+		return v, fmt.Errorf("failed to request body: %w", err)
+	}
+
+	_ = r.Body.Close()
+	return v, nil
 }

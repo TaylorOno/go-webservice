@@ -13,11 +13,11 @@ type Mux interface {
 
 // GreeterHandler wraps a service instance and provides HTTP handlers for greeting operations.
 type GreeterHandler struct {
-	Service *service.Service
+	Service *service.Greeter
 }
 
 // NewGreeterHandler returns a new GreeterHandler instance.
-func NewGreeterHandler(service *service.Service) *GreeterHandler {
+func NewGreeterHandler(service *service.Greeter) *GreeterHandler {
 	return &GreeterHandler{Service: service}
 }
 
@@ -25,6 +25,7 @@ func NewGreeterHandler(service *service.Service) *GreeterHandler {
 func (s *GreeterHandler) Routes(mux Mux) {
 	mux.HandleFunc("GET /helloworld", s.helloWorld)
 	mux.HandleFunc("POST /helloworld", s.helloUser)
+	mux.HandleFunc("GET /dailyjoke", s.helloWithJoke)
 }
 
 func (s *GreeterHandler) helloWorld(w http.ResponseWriter, r *http.Request) {
@@ -45,6 +46,17 @@ func (s *GreeterHandler) helloUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(greeting))
+}
+
+func (s *GreeterHandler) helloWithJoke(writer http.ResponseWriter, request *http.Request) {
+	joke, err := s.Service.SayMorningJokes(request.Context())
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writer.WriteHeader(http.StatusOK)
+	writer.Write([]byte(joke))
 }
 
 type GreetRequest struct {

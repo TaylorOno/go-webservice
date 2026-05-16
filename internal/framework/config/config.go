@@ -12,10 +12,15 @@ import (
 )
 
 var (
+	profile        string
 	paths          = []string{".", "../.."}
 	onConfigChange func()
 	Registry       *Configuration
 )
+
+func init() {
+	flag.StringVar(&profile, "profile", "", "profile to use, if any.")
+}
 
 // Configuration holds the application configuration
 type Configuration struct {
@@ -86,4 +91,24 @@ func OnConfigChange(run func()) {
 	}
 
 	onConfigChange = run
+}
+
+func GetLogLevel(key string) slog.Level {
+	if Registry == nil {
+		return slog.LevelInfo
+	}
+
+	levelStr := Registry.GetString(key)
+	if levelStr == "" {
+		return slog.LevelInfo
+	}
+
+	var level slog.Level
+	err := level.UnmarshalText([]byte(levelStr))
+	if err != nil {
+		slog.Warn("failed to parse log level, defaulting to INFO", slog.String("key", key), slog.String("value", levelStr), slog.String("error", err.Error()))
+		return slog.LevelInfo
+	}
+
+	return level
 }

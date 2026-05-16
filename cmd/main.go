@@ -13,9 +13,12 @@ import (
 
 	"github.com/taylorono/go-webservice/internal/api"
 	"github.com/taylorono/go-webservice/internal/framework/config"
+	"github.com/taylorono/go-webservice/internal/framework/headers"
 	"github.com/taylorono/go-webservice/internal/framework/logging"
 	"github.com/taylorono/go-webservice/internal/framework/metrics"
+	"github.com/taylorono/go-webservice/internal/framework/rest"
 	"github.com/taylorono/go-webservice/internal/framework/web"
+	"github.com/taylorono/go-webservice/internal/joker"
 	"github.com/taylorono/go-webservice/internal/service"
 )
 
@@ -53,7 +56,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	prometheusReporter := metrics.NewPrometheusReporter()
 
 	// Create business logic services
-	greeter := service.NewService()
+	greeter := initializeGreetingService(ctx, prometheusReporter)
 
 	// Creates a web server for the transport layer
 	webServer := createWebServer(prometheusReporter)
@@ -74,29 +77,6 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	return nil
 }
 
-func createWebServer(prometheusReporter *metrics.PrometheusReporter) *web.Server {
-	// Register debug logging middleware
-	var middleware []web.Middleware
-	if logging.Level() <= slog.LevelDebug {
-		middleware = append(middleware, logging.HttpLoggingMiddleware)
-	}
-
-	// Add Platform Headers middleware
-	// This will copy the platform headers from requests into the context
-	ph := web.NewPlatformHeaders(0, web.StartsWithHeaders([]string{"X-Platform"}))
-	middleware = append(middleware, ph.AddToContext)
-
-	// Create a new web server
-	webServer := web.NewServer(
-		web.WithPort(config.Registry.GetString("PORT")),
-		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
-		web.WithMiddleware(middleware...),
-		web.WithMetricRegistry(prometheusReporter),
-	)
-
-	return webServer
-}
-
 func startup(ctx context.Context) {
 	wg := sync.WaitGroup{}
 	for _, setupFunc := range setup {
@@ -114,4 +94,44 @@ func shutdown() {
 		wg.Go(func() { cleanupFunc(shutdownCtx) })
 	}
 	wg.Wait()
+}
+
+func createWebServer(prometheusReporter *metrics.PrometheusReporter) *web.Server {
+	// Register debug logging middleware
+	var middleware []web.Middleware
+	if logging.Level() <= slog.LevelDebug {
+		middleware = append(middleware, logging.HttpLoggingMiddleware)
+	}
+
+	// Add Platform Headers middleware
+	// This will copy the platform headers from requests into the context
+	ph := headers.NewPlatformHeaders(headers.StartsWithHeaders([]string{"X-Platform"}))
+	middleware = append(middleware, ph.ContextHeaders)
+
+	// Create a new web server
+	webServer := web.NewServer(
+		web.WithPort(config.Registry.GetString("PORT")),
+		web.WithDebugPort(config.Registry.GetString("DEBUG_PORT")),
+		web.WithMiddleware(middleware...),
+		web.WithMetricRegistry(prometheusReporter),
+	)
+
+	return webServer
+}
+
+func initializeGreetingService(_ context.Context, reporter *metrics.PrometheusReporter) *service.Greeter {
+	// Sample RestClient Dependency
+	jokeClient := rest.NewClientBuilder("jokes").
+		WithMetricRegistry(reporter).
+		WithMiddleware(headers.Middleware).
+		WithMiddleware(
+			rest.Verbose(logging.GetHandler(), config.GetLogLevel("LOGGING.JOKE_SERVICE")).RequestLogger(),
+		).
+		Build()
+
+	// Create downstream dependency wrapper
+	jokeService := joker.NewJokeProvider(jokeClient)
+
+	// Create business logic services
+	return service.NewGreater(jokeService)
 }

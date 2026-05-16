@@ -7,7 +7,7 @@ import (
 )
 
 // Metrics Middleware to track http stats
-func Metrics(clientName string) ClientMiddleware {
+func Metrics(client *Client) ClientMiddleware {
 	return func(c Doer) Doer {
 		return ClientFunc(func(r *http.Request) (*http.Response, error) {
 			start := time.Now()
@@ -16,9 +16,9 @@ func Metrics(clientName string) ClientMiddleware {
 			// record metrics or errors after performing the request.
 			headers := maps.Clone(r.Header)
 			if err != nil {
-				defaultErrorHandler(clientName, r.Method, headers, err)
+				client.OnError(r.Method, headers, err)
 			} else {
-				defaultStatsHandler(clientName, r.Host, r.Method, headers, res.StatusCode, time.Since(start))
+				client.OnStats(r.Host, r.Method, headers, res.StatusCode, time.Since(start))
 			}
 
 			return res, err

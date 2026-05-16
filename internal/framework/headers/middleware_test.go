@@ -1,12 +1,10 @@
-package web
+package headers
 
 import (
 	"net/http"
 	"reflect"
 	"testing"
 )
-
-var HeaderContextKey = "key"
 
 func TestPlatformHeaders_extract(t *testing.T) {
 	type options struct {
@@ -58,12 +56,12 @@ func TestPlatformHeaders_extract(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewPlatformHeaders(HeaderContextKey,
+			h := NewPlatformHeaders(
 				StartsWithHeaders(tt.given.StartsWithHeaders),
 				ExactHeaders(tt.given.ExactHeaders),
 			)
 			gotCtx := h.headersToContext(tt.when)
-			got := gotCtx.Value(HeaderContextKey).(http.Header)
+			got := gotCtx.Value(httpHeaderKey{}).(http.Header)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("extract() = %v, want %v", got, tt.want)
 			}
