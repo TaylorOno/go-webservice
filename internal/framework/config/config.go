@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -19,7 +20,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&profile, "profile", "", "profile to use, if any.")
+	flag.StringVar(&profile, "profiles", "", "profiles to use if any as a comma separated list")
 }
 
 // Configuration holds the application configuration
@@ -56,10 +57,16 @@ func InitConfig(_ context.Context) {
 		registry.AddConfigPath(path)
 	}
 
-	// find and read the config file
+	// find and read the base config file
 	err = registry.ReadInConfig()
 	if err != nil {
 		slog.Error("failed to read config file", slog.String("error", err.Error()))
+	}
+
+	// apply profile-specific overrides config files
+	for _, env := range registry.GetStringSlice("profiles") {
+		registry.SetConfigName(fmt.Sprintf("config-%s", env))
+		registry.MergeInConfig()
 	}
 
 	// watch for config changes and allow dynamic reload
