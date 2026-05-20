@@ -45,7 +45,7 @@ func main() {
 }
 
 func run(ctx context.Context, w io.Writer, args []string) error {
-	setup = append(setup, config.InitConfig, logging.InitLogger)
+	setup = append(setup, config.InitConfig, logging.InitLogger, logging.WithEnabledFunction(config.GetLogLevel))
 
 	// apply any setup functions
 	startup(ctx)
@@ -124,12 +124,13 @@ func createWebServer(prometheusReporter *metrics.PrometheusReporter) *web.Server
 }
 
 func initializeGreetingService(_ context.Context, reporter *metrics.PrometheusReporter) *service.Greeter {
+
 	// Sample RestClient Dependency
 	jokeClient := rest.NewClientBuilder("jokes").
 		WithMetricRegistry(reporter).
 		WithMiddleware(headers.Middleware).
 		WithMiddleware(
-			rest.Verbose(logging.GetHandler(), config.GetLogLevel("LOGGING.JOKE_SERVICE")).RequestLogger(),
+			rest.Verbose().WithHandler(logging.ComponentLoggerFor("jokes")).RequestLogger(),
 		).
 		Build()
 

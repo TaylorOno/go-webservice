@@ -2,7 +2,6 @@ package joker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -36,10 +35,6 @@ func (s Service) GetJoke(ctx context.Context) (string, error) {
 	resp, err := s.client.Do(req.WithContext(ctx))
 	if err != nil {
 		return "", err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.New("non-200 status code: " + resp.Status)
 	}
 
 	joke, err := rest.Decode[Joke](resp)

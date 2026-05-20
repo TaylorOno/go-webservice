@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -59,6 +60,14 @@ type Doer interface {
 
 func Decode[T any](r *http.Response) (T, error) {
 	var v T
+	if r == nil {
+		return v, errors.New("response is nil")
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return v, fmt.Errorf("non-200 status code: %v", r.Status)
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
 		return v, fmt.Errorf("failed to request body: %w", err)
 	}

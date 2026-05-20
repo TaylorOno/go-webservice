@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/taylorono/go-webservice/internal/framework/logging"
 	"github.com/taylorono/go-webservice/internal/framework/metrics"
 )
 
@@ -22,7 +21,7 @@ func TestClientFunc_Do(t *testing.T) {
 	client := NewClientBuilder("test").
 		WithMetricRegistry(metrics.NewPrometheusReporter()).
 		WithMiddleware(
-			Verbose(logging.GetHandler(), level).RequestLogger(),
+			Verbose().RequestLogger(),
 		).
 		Build()
 

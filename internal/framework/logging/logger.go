@@ -25,21 +25,38 @@ func Level() slog.Level {
 	return lvl
 }
 
-func InitLogger(ctx context.Context) {
-	if !testing.Testing() {
-		flag.Parse()
-		if !enableJSON {
-			opts := &slog.HandlerOptions{Level: lvl, AddSource: enableSource}
-			handler = NewHandler(slog.NewTextHandler(os.Stdout, opts))
-		} else {
-			opts := &slog.HandlerOptions{Level: lvl, AddSource: enableSource}
-			handler = NewHandler(slog.NewJSONHandler(os.Stdout, opts))
-		}
+// InitLogger initializes the base logger configured via program flags.
+func InitLogger(_ context.Context) {
+	if testing.Testing() {
+		handler = slog.Default().Handler()
+		return
+	}
+
+	flag.Parse()
+	if !enableJSON {
+		opts := &slog.HandlerOptions{Level: lvl, AddSource: enableSource}
+		handler = &BaseHandler{slog.NewTextHandler(os.Stdout, opts)}
+	} else {
+		opts := &slog.HandlerOptions{Level: lvl, AddSource: enableSource}
+		handler = &BaseHandler{slog.NewJSONHandler(os.Stdout, opts)}
 	}
 
 	slog.SetDefault(slog.New(handler))
+	return
+}
+
+// WithEnabledFunction allows you to set a function for dynamically determining log levels.
+// A typical use case is to use config.GetLogLevel, which can update the log level at runtime.
+func WithEnabledFunction(lvlFunc func(key string) slog.Level) func(context.Context) {
+	return func(ctx context.Context) {
+		logLevelFunc = lvlFunc
+	}
 }
 
 func GetHandler() slog.Handler {
+	if handler == nil {
+		InitLogger(context.Background())
+	}
+
 	return handler
 }

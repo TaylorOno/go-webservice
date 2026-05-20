@@ -2,6 +2,7 @@ package rest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -9,16 +10,21 @@ import (
 	"strings"
 )
 
+var LevelTrace = slog.Level(-8)
+
 type VerboseMiddleware struct {
-	level  slog.Level
 	logger *slog.Logger
 }
 
-func Verbose(handler slog.Handler, level slog.Level) *VerboseMiddleware {
+func Verbose() *VerboseMiddleware {
 	return &VerboseMiddleware{
-		level:  level,
-		logger: slog.New(handler),
+		logger: slog.Default(),
 	}
+}
+
+func (v *VerboseMiddleware) WithHandler(handler slog.Handler) *VerboseMiddleware {
+	v.logger = slog.New(handler)
+	return v
 }
 
 // RequestLogger prints basic request information to standard output
@@ -39,7 +45,7 @@ func (v *VerboseMiddleware) RequestLogger() ClientMiddleware {
 }
 
 func (v *VerboseMiddleware) logRequest(r *http.Request) {
-	if v.level < -4 {
+	if v.logger.Enabled(context.Background(), LevelTrace) {
 		v.traceRequest(r)
 	}
 }
@@ -54,29 +60,29 @@ func (v *VerboseMiddleware) traceRequest(req *http.Request) {
 	// We need to parse the dump to separate headers and body
 	parts := strings.SplitN(string(requestDump), "\r\n\r\n", 2)
 	if len(parts) != 2 {
-		v.logger.Log(req.Context(), v.level, "HTTP Request", slog.String("dump", string(requestDump)))
+		v.logger.Log(req.Context(), LevelTrace, "HTTP Request", slog.String("dump", string(requestDump)))
 		return
 	}
 
 	if indented, ok := prettyJSON([]byte(parts[1])); ok {
-		v.logger.Log(req.Context(), v.level, "HTTP Request", slog.String("headers", parts[0]), slog.String("body", indented))
+		v.logger.Log(req.Context(), LevelTrace, "HTTP Request", slog.String("headers", parts[0]), slog.String("body", indented))
 		return
 	}
 
-	v.logger.Log(req.Context(), v.level, "HTTP Request", slog.String("dump", string(requestDump)))
+	v.logger.Log(req.Context(), LevelTrace, "HTTP Request", slog.String("dump", string(requestDump)))
 }
 
 func (v *VerboseMiddleware) logResponse(req *http.Request, resp *http.Response) {
 	switch {
-	case v.level < -4:
+	case v.logger.Enabled(req.Context(), LevelTrace):
 		v.traceResponse(req, resp)
-	case v.level < -0:
+	case v.logger.Enabled(req.Context(), slog.LevelDebug):
 		v.debugResponse(req, resp)
 	}
 }
 
 func (v *VerboseMiddleware) logError(req *http.Request, err error) {
-	v.logger.Log(req.Context(), v.level, "HTTP Response",
+	v.logger.DebugContext(req.Context(), "HTTP Response",
 		slog.String("method", req.Method),
 		slog.String("url", req.URL.String()),
 		slog.Any("headers", req.Header),
@@ -85,7 +91,7 @@ func (v *VerboseMiddleware) logError(req *http.Request, err error) {
 }
 
 func (v *VerboseMiddleware) debugResponse(req *http.Request, resp *http.Response) {
-	v.logger.Log(req.Context(), v.level, "HTTP Response",
+	v.logger.DebugContext(req.Context(), "HTTP Response",
 		slog.String("method", req.Method),
 		slog.String("url", req.URL.String()),
 		slog.Any("headers", req.Header),
@@ -103,16 +109,16 @@ func (v *VerboseMiddleware) traceResponse(req *http.Request, resp *http.Response
 	// We need to parse the dump to separate headers and body
 	parts := strings.SplitN(string(responseDump), "\r\n\r\n", 2)
 	if len(parts) != 2 {
-		v.logger.Log(req.Context(), v.level, "HTTP Response", slog.String("dump", string(responseDump)))
+		v.logger.Log(req.Context(), LevelTrace, "HTTP Response", slog.String("dump", string(responseDump)))
 		return
 	}
 
 	if indented, ok := prettyJSON([]byte(parts[1])); ok {
-		v.logger.Log(req.Context(), v.level, "HTTP Response", slog.String("headers", parts[0]), slog.Any("body", indented))
+		v.logger.Log(req.Context(), LevelTrace, "HTTP Response", slog.String("headers", parts[0]), slog.Any("body", indented))
 		return
 	}
 
-	v.logger.Log(req.Context(), v.level, "HTTP Response", slog.String("dump", string(responseDump)))
+	v.logger.Log(req.Context(), LevelTrace, "HTTP Response", slog.String("dump", string(responseDump)))
 }
 
 func prettyJSON(b []byte) (string, bool) {
