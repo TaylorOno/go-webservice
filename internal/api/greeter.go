@@ -1,10 +1,17 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 
+	"github.com/taylorono/go-webservice/internal/framework/logging"
 	"github.com/taylorono/go-webservice/internal/framework/web"
 	"github.com/taylorono/go-webservice/internal/service"
+)
+
+var (
+	statusGetJokeFailed = logging.NewStatus("api", "failed to get joke")
+	statusParseError    = logging.NewStatus("api", "parse error")
 )
 
 type Mux interface {
@@ -36,8 +43,11 @@ func (s *GreeterHandler) helloWorld(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *GreeterHandler) helloUser(w http.ResponseWriter, r *http.Request) {
+	ctx := logging.WithLogContext(r.Context(), slog.String("api", "/helloworld"))
+
 	req, err := web.Decode[GreetRequest](r)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to parse user name", logging.Metric(statusParseError), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -48,15 +58,18 @@ func (s *GreeterHandler) helloUser(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(greeting))
 }
 
-func (s *GreeterHandler) helloWithJoke(writer http.ResponseWriter, request *http.Request) {
-	joke, err := s.Service.SayMorningJokes(request.Context())
+func (s *GreeterHandler) helloWithJoke(w http.ResponseWriter, r *http.Request) {
+	ctx := logging.WithLogContext(r.Context(), slog.String("api", "/dailyjoke"))
+
+	joke, err := s.Service.SayMorningJokes(r.Context())
 	if err != nil {
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		slog.ErrorContext(ctx, "failed to get joke", logging.Metric(statusGetJokeFailed), "error", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writer.WriteHeader(http.StatusOK)
-	writer.Write([]byte(joke))
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(joke))
 }
 
 type GreetRequest struct {

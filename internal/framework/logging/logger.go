@@ -3,6 +3,7 @@ package logging
 import (
 	"context"
 	"flag"
+	"io"
 	"log/slog"
 	"os"
 	"testing"
@@ -33,12 +34,12 @@ func InitLogger(_ context.Context) {
 	}
 
 	flag.Parse()
+	opts := &slog.HandlerOptions{Level: lvl, AddSource: enableSource}
+	writer := &WriterReporter{os.Stdout}
 	if !enableJSON {
-		opts := &slog.HandlerOptions{Level: lvl, AddSource: enableSource}
-		handler = &BaseHandler{slog.NewTextHandler(os.Stdout, opts)}
+		handler = &BaseHandler{slog.NewTextHandler(writer, opts)}
 	} else {
-		opts := &slog.HandlerOptions{Level: lvl, AddSource: enableSource}
-		handler = &BaseHandler{slog.NewJSONHandler(os.Stdout, opts)}
+		handler = &BaseHandler{slog.NewJSONHandler(writer, opts)}
 	}
 
 	slog.SetDefault(slog.New(handler))
@@ -59,4 +60,14 @@ func GetHandler() slog.Handler {
 	}
 
 	return handler
+}
+
+type WriterReporter struct {
+	io.Writer
+}
+
+func (w *WriterReporter) Write(p []byte) (int, error) {
+	n, err := w.Writer.Write(p)
+	go bytesLoggedFunc(n)
+	return n, err
 }

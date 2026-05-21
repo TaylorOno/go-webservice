@@ -30,22 +30,7 @@ type BaseHandler struct {
 }
 
 func (h *BaseHandler) Handle(ctx context.Context, r slog.Record) error {
+	r.Attrs(emitMetric(r.Level))
 	r.AddAttrs(slogCtx(ctx)...)
 	return h.Handler.Handle(ctx, r)
-}
-
-type slogCtxKey struct{}
-
-func slogCtx(ctx context.Context) []slog.Attr {
-	if attr, ok := ctx.Value(slogCtxKey{}).([]slog.Attr); ok {
-		return attr
-	}
-
-	return []slog.Attr{}
-}
-
-func WithLogContext(ctx context.Context, a ...slog.Attr) context.Context {
-	attrs := slogCtx(ctx)
-	attrs = append(attrs, a...)
-	return context.WithValue(ctx, slogCtxKey{}, a)
 }

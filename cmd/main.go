@@ -56,6 +56,9 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// Create Metric Reporter
 	prometheusReporter := metrics.NewPrometheusReporter()
 
+	// Enable Logger Metrics
+	logging.WithMetricReporter(prometheusReporter)
+
 	// Create business logic services
 	greeter := initializeGreetingService(ctx, prometheusReporter)
 
