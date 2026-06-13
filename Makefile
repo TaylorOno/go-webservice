@@ -90,6 +90,16 @@ run/live:
 # OPERATIONS
 # ==================================================================================== #
 
+## docker/build: build the docker image
+.PHONY: docker/build
+docker/build:
+	docker build -t ${BINARY_NAME} .
+
+## docker/run: run the application via docker
+.PHONY: docker/run
+docker/run: docker/build
+	docker run -it --rm -p 9090:9090 ${BINARY_NAME}
+
 ## push: push changes to the remote Git repository
 .PHONY: push
 push: tidy audit no-dirty

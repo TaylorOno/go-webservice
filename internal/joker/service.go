@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/taylorono/go-webservice/internal/framework/rest"
+	"github.com/taylorono/go-lib/rest"
 	"github.com/taylorono/go-webservice/internal/service"
 )
 

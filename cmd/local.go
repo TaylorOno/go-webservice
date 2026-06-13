@@ -8,7 +8,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/taylorono/go-webservice/internal/framework/testcontainer"
+	"github.com/taylorono/go-lib/testcontainer"
 )
 
 // init sets default environment variables for Podman compatibility on Windows and disables Ryuk for stability.

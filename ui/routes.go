@@ -3,7 +3,7 @@ package ui
 import (
 	"net/http"
 
-	"github.com/taylorono/go-webservice/internal/framework/web"
+	"github.com/taylorono/go-lib/web"
 )
 
 type Mux interface {

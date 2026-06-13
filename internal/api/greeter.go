@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/taylorono/go-webservice/internal/framework/logging"
-	"github.com/taylorono/go-webservice/internal/framework/web"
+	"github.com/taylorono/go-lib/logging"
+	"github.com/taylorono/go-lib/web"
 	"github.com/taylorono/go-webservice/internal/service"
 )
 
