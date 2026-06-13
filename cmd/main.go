@@ -138,7 +138,7 @@ func initializeGreetingService(_ context.Context, reporter *metrics.PrometheusRe
 		Build()
 
 	// Create downstream dependency wrapper
-	jokeService := joker.NewJokeProvider(jokeClient)
+	jokeService := joker.NewJokeProvider(jokeClient, config.Registry.GetString("JOKES.URL"))
 
 	// Create business logic services
 	return service.NewGreater(jokeService)

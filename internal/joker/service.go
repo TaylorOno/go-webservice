@@ -13,10 +13,11 @@ var _ service.JokeProvider = &Service{}
 
 type Service struct {
 	client *rest.Client
+	url    string
 }
 
-func NewJokeProvider(client *rest.Client) *Service {
-	return &Service{client: client}
+func NewJokeProvider(client *rest.Client, url string) *Service {
+	return &Service{client: client, url: url}
 }
 
 type Joke struct {
@@ -27,7 +28,7 @@ type Joke struct {
 }
 
 func (s Service) GetJoke(ctx context.Context) (string, error) {
-	req, err := http.NewRequest("GET", "https://official-joke-api.appspot.com/random_joke", nil)
+	req, err := http.NewRequest("GET", s.url, nil)
 	if err != nil {
 		return "", err
 	}

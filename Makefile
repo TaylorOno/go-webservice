@@ -56,10 +56,16 @@ test/cover:
 	go test -v -race -buildvcs -coverprofile=./build/coverage.out ./...
 	go tool cover -html=./build/coverage.out
 
-## bdd: run bdd tests
+## bdd: run bdd tests will run against mocks by default
 .PHONY: bdd
 bdd:
-	go test -v -race -buildvcs ./test/... -tags integration
+	go test -v -race -buildvcs ./test/... -tags integration -count=1
+
+## bdd/record: run bdd tests and capture new mock data
+.PHONY: bdd/record
+bdd/record:
+	go test -v -race -buildvcs ./test/... -tags integration -record -count=1
+
 
 ## build: build the application
 .PHONY: build

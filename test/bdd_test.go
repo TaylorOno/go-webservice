@@ -40,6 +40,19 @@ func InitializeSuite(t *testing.T) func(*godog.TestSuiteContext) {
 	return func(suiteContext *godog.TestSuiteContext) {
 		// Build the application once per test suite
 		components.Build(t, suiteContext)
+
+		// only configure wiremock if we are not running against a real upstreams
+		if true {
+			// Start wiremock once per test suite
+			components.Wiremock(t, suiteContext)
+
+			// Route real upstream URLs through WireMock acting as a forward proxy.
+			suiteContext.BeforeSuite(func() {
+				t.Setenv("HTTP_PROXY", components.WiremockURL)
+				t.Setenv("HTTPS_PROXY", components.WiremockURL) // TODO add wiremock certificate for https support
+				t.Setenv("NO_PROXY", "localhost,127.0.0.1,::1")
+			})
+		}
 	}
 }
 

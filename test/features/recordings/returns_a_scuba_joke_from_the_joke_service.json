@@ -1,0 +1,65 @@
+{
+  "mappings": [
+    {
+      "id": "583aceaf-0638-4184-81bd-4b9f44b4de73",
+      "name": "random_joke",
+      "request": {
+        "headers": {
+          "Host": {
+            "equalTo": "official-joke-api.appspot.com"
+          }
+        },
+        "method": "GET",
+        "url": "/random_joke"
+      },
+      "requiredScenarioState": "scenario-1-random_joke-2",
+      "response": {
+        "body": "{\"type\":\"programming\",\"setup\":\"Why did the programmer go to art school?\",\"punchline\":\"He wanted to learn how to code outside the box.\",\"id\":414}",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sat, 13 Jun 2026 23:25:57 GMT",
+          "etag": "W/\"90-YKijXCUsEL+H3lYcoJEx+pQfnWs\"",
+          "server": "Google Frontend",
+          "vary": "Accept-Encoding",
+          "x-cloud-trace-context": "482c3da7c2293e9262350e7aa3a2a4b0",
+          "x-powered-by": "Express"
+        },
+        "status": 200
+      },
+      "scenarioName": "scenario-1-random_joke",
+      "uuid": "583aceaf-0638-4184-81bd-4b9f44b4de73"
+    },
+    {
+      "id": "25a85aa0-e4f2-48ad-a408-b581cea68a87",
+      "name": "random_joke",
+      "newScenarioState": "scenario-1-random_joke-2",
+      "request": {
+        "headers": {
+          "Host": {
+            "equalTo": "official-joke-api.appspot.com"
+          }
+        },
+        "method": "GET",
+        "url": "/random_joke"
+      },
+      "requiredScenarioState": "Started",
+      "response": {
+        "body": "{\"type\":\"programming\",\"setup\":\"Hey, wanna hear a joke?\",\"punchline\":\"Parsing HTML with regex.\",\"id\":395}",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sat, 13 Jun 2026 23:25:57 GMT",
+          "etag": "W/\"68-+QZMbYCK3lqbtZnOKD7tUZFGhGk\"",
+          "server": "Google Frontend",
+          "vary": "Accept-Encoding",
+          "x-cloud-trace-context": "e78d536a55d233ff0fe934132dc06698",
+          "x-powered-by": "Express"
+        },
+        "status": 200
+      },
+      "scenarioName": "scenario-1-random_joke",
+      "uuid": "25a85aa0-e4f2-48ad-a408-b581cea68a87"
+    }
+  ]
+}

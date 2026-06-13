@@ -1,0 +1,65 @@
+{
+  "mappings": [
+    {
+      "id": "1d2042c0-7151-4001-86ff-85f96cb57ee5",
+      "name": "random_joke",
+      "request": {
+        "headers": {
+          "Host": {
+            "equalTo": "official-joke-api.appspot.com"
+          }
+        },
+        "method": "GET",
+        "url": "/random_joke"
+      },
+      "requiredScenarioState": "scenario-1-random_joke-2",
+      "response": {
+        "body": "{\"type\":\"programming\",\"setup\":\"Why did the functions stop calling each other?\",\"punchline\":\"Because they had constant arguments.\",\"id\":406}",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sat, 13 Jun 2026 23:25:56 GMT",
+          "etag": "W/\"8b-8whk1FgL0CpKe0K8EqGteDsLviE\"",
+          "server": "Google Frontend",
+          "vary": "Accept-Encoding",
+          "x-cloud-trace-context": "3661146ff816c05ec2b020b24040e32b",
+          "x-powered-by": "Express"
+        },
+        "status": 200
+      },
+      "scenarioName": "scenario-1-random_joke",
+      "uuid": "1d2042c0-7151-4001-86ff-85f96cb57ee5"
+    },
+    {
+      "id": "65506c10-8a13-47e9-a3a5-6edfb6e13ef3",
+      "name": "random_joke",
+      "newScenarioState": "scenario-1-random_joke-2",
+      "request": {
+        "headers": {
+          "Host": {
+            "equalTo": "official-joke-api.appspot.com"
+          }
+        },
+        "method": "GET",
+        "url": "/random_joke"
+      },
+      "requiredScenarioState": "Started",
+      "response": {
+        "body": "{\"type\":\"general\",\"setup\":\"What's a computer's favorite snack?\",\"punchline\":\"Microchips.\",\"id\":423}",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sat, 13 Jun 2026 23:25:56 GMT",
+          "etag": "W/\"63-8tYpcOJMfLOV1amN3l36CDyPoxo\"",
+          "server": "Google Frontend",
+          "vary": "Accept-Encoding",
+          "x-cloud-trace-context": "be03c9272846548a64e81959bd8af219",
+          "x-powered-by": "Express"
+        },
+        "status": 200
+      },
+      "scenarioName": "scenario-1-random_joke",
+      "uuid": "65506c10-8a13-47e9-a3a5-6edfb6e13ef3"
+    }
+  ]
+}
