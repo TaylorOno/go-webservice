@@ -1,0 +1,25 @@
+server:
+  http_listen_network: tcp4
+  http_listen_address: 0.0.0.0
+  http_listen_port: 3200
+  grpc_listen_network: tcp4
+  grpc_listen_address: 0.0.0.0
+  grpc_listen_port: 9095
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo/traces
+
+distributor:
+  log_received_spans:
+    enabled: true
+
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4417
+        http:
+          endpoint: 0.0.0.0:4418

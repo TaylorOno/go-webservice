@@ -36,7 +36,7 @@ func (s *GreeterHandler) Routes(mux Mux) {
 }
 
 func (s *GreeterHandler) helloWorld(w http.ResponseWriter, r *http.Request) {
-	greeting := s.Service.SayHello()
+	greeting := s.Service.SayHello(r.Context())
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(greeting))
@@ -52,7 +52,7 @@ func (s *GreeterHandler) helloUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	greeting := s.Service.SayHelloUser(req.Name)
+	greeting := s.Service.SayHelloUser(r.Context(), req.Name)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(greeting))
