@@ -2,6 +2,10 @@
 MAIN_PACKAGE_PATH := ./cmd/main.go
 BINARY_NAME := go-webservice
 
+# git tag or commit hash
+SERVICE_VERSION := $(shell git describe --tags --always --dirty)
+GIT_COMMIT := $(shell git rev-parse --short HEAD)
+
 # ==================================================================================== #
 # HELPERS
 # ==================================================================================== #
@@ -20,6 +24,19 @@ confirm:
 no-dirty:
 	git diff --exit-code
 
+# ==================================================================================== #
+# Dependencies
+# ==================================================================================== #
+
+## otel/start: start the otel trace collector stack
+.PHONY: otel/start
+otel/start:
+	@podman compose up -d
+
+## otel/stop: stop the otel trace collector stack
+.PHONY: otel/stop
+otel/stop:
+	@podman compose down
 
 # ==================================================================================== #
 # QUALITY CONTROL
@@ -64,7 +81,7 @@ bdd:
 ## build: build the application
 .PHONY: build
 build:
-	go build -o=/tmp/bin/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
+	go build -ldflags="-X main.serviceVersion=${SERVICE_VERSION} -X main.gitCommit=${GIT_COMMIT}" -o=/tmp/bin/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
 
 ## run: run the  application
 .PHONY: run
@@ -108,6 +125,6 @@ push: tidy audit no-dirty
 ## production/deploy: deploy the application to production
 .PHONY: production/deploy
 production/deploy: confirm tidy audit no-dirty
-	GOOS=linux GOARCH=amd64 go build -ldflags='-s' -o=/tmp/bin/linux_amd64/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
+	GOOS=linux GOARCH=amd64 go build -ldflags='-s -X main.serviceVersion=${SERVICE_VERSION} -X main.gitCommit=${GIT_COMMIT}' -o=/tmp/bin/linux_amd64/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
 	upx -5 /tmp/bin/linux_amd64/${BINARY_NAME}
     # Include additional deployment steps here...

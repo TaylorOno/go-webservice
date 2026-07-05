@@ -1,3 +1,6 @@
 PORT: 9090
 JOKES:
   LOGGING: DEBUG
+OTEL_EXPORTER:
+  URL: "localhost:4317"
+  INSECURE: true

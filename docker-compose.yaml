@@ -1,0 +1,34 @@
+networks:
+  tracing:
+    name: tracing
+services:
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector
+    user: "0"
+    depends_on:
+      - tempo
+    network_mode: "service:tempo"
+    volumes:
+      - ./config/otel/config.yaml:/etc/otelcol/config.yaml
+      - ./.data:/etc/otelcol/.data
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - tempo
+    network_mode: "service:tempo"
+    volumes:
+      - ./config/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/tempo.yaml
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    ports:
+      - "3000:3000"
+      - "3200:3200"
+      - "4317:4317"
+    networks:
+      - tracing
+    volumes:
+    - ./config/tempo/tempo.yaml:/etc/tempo.yaml

@@ -13,3 +13,9 @@
 ### Git ###
 .git
 .gitignore
+
+### Docker Data ###
+/.data/
+
+### Local Dev ###
+/go.work

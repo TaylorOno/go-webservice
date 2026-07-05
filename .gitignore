@@ -10,3 +10,10 @@
 ### Mac ###
 .DS_Store
 /build/
+
+### Docker Data ###
+/.data/
+
+### Local Dev ###
+/go.work
+/build/
